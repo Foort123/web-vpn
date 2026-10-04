@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Pages P2P VPN / WebRTC Proxy</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- PeerJS для удобного P2P сигналинга поверх WebRTC -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="pulse-icon"></span>
+        <h1>GH-Pages P2P VPN</h1>
+      </div>
+      <div class="subtitle">Полноценный WebRTC туннель без бэкенд-сервера</div>
+    </header>
+
+    <!-- Выбор роли -->
+    <div class="role-selector">
+      <button id="btn-role-client" class="role-btn active" onclick="switchRole('client')">
+        <span class="role-icon">🌐</span>
+        <span class="role-text">
+          <strong>Клиент (Client)</strong>
+          <small>Я хочу обойти блокировки</small>
+        </span>
+      </button>
+      <button id="btn-role-exit" class="role-btn" onclick="switchRole('exit')">
+        <span class="role-icon">🛡️</span>
+        <span class="role-text">
+          <strong>Выходной узел (Exit Node)</strong>
+          <small>Я делюсь свободным интернетом</small>
+        </span>
+      </button>
+    </div>
+
+    <!-- Информационная панель соединения -->
+    <section class="card connection-card">
+      <div class="card-header">
+        <h3>Состояние соединения</h3>
+        <span id="connection-status-badge" class="badge badge-disconnected">Отключено</span>
+      </div>
+
+      <div class="id-section">
+        <div class="id-box">
+          <label>Ваш Peer ID:</label>
+          <div class="input-copy-group">
+            <input type="text" id="my-peer-id" readonly value="Инициализация...">
+            <button class="btn btn-secondary" onclick="copyMyId()">Копировать</button>
+          </div>
+        </div>
+
+        <div id="target-id-box" class="id-box">
+          <label>ID выходного узла (Exit Node ID):</label>
+          <div class="input-copy-group">
+            <input type="text" id="remote-peer-id" placeholder="Вставьте ID выходного узла">
+            <button id="btn-connect" class="btn btn-primary" onclick="connectToPeer()">Подключиться</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Статистика туннеля -->
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Задержка (Ping)</span>
+          <span id="stat-ping" class="stat-value">-- ms</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Передано (TX)</span>
+          <span id="stat-tx" class="stat-value">0 KB</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Получено (RX)</span>
+          <span id="stat-rx" class="stat-value">0 KB</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Канал</span>
+          <span id="stat-channel" class="stat-value">WebRTC SCTP</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Секция для Клиента: Веб-прокси и мост -->
+    <main id="client-panel" class="panel-section active">
+      <div class="card">
+        <h3>Инлайн Веб-Прокси (Туннелирование запросов)</h3>
+        <p class="description">
+          Любой введённый URL шифруется и передаётся через WebRTC на выходную ноду. Нода делает запрос из открытой сети и возвращает ответ.
+        </p>
+
+        <div class="proxy-bar">
+          <select id="request-method">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="HEAD">HEAD</option>
+          </select>
+          <input type="url" id="proxy-url" placeholder="https://api.ipify.org?format=json" value="https://api.ipify.org?format=json">
+          <button class="btn btn-primary" id="btn-send-request" onclick="sendProxyRequest()">Перейти</button>
+        </div>
+
+        <!-- Превью ответа -->
+        <div class="response-container">
+          <div class="response-header">
+            <span>Ответ: <strong id="response-status">--</strong></span>
+            <span id="response-time">0 ms</span>
+          </div>
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchResponseTab('preview')">Рендер / IFrame</button>
+            <button class="tab-btn" onclick="switchResponseTab('raw')">Сырой ответ / Headers</button>
+          </div>
+          <div id="tab-preview" class="tab-content active">
+            <iframe id="response-frame" sandbox="allow-same-origin allow-scripts"></iframe>
+          </div>
+          <div id="tab-raw" class="tab-content">
+            <pre id="response-raw">// Ответ появится здесь после выполнения запроса...</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Локальный SOCKS5 мост -->
+      <div class="card">
+        <h3>Системный VPN / SOCKS5 Режим</h3>
+        <p class="description">
+          Хотите пустить <strong>весь трафик Windows / Telegram / Chrome</strong> через этот туннель? 
+          Запустите локальный скрипт-мост <code>socks-bridge.py</code>. Он подключится к этой вкладке через WebSocket и поднимет локальный SOCKS5 на <code>127.0.0.1:1080</code>.
+        </p>
+        <div class="bridge-status">
+          <span>Локальный WebSocket мост: </span>
+          <span id="ws-bridge-badge" class="badge badge-disconnected">Не подключен</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Секция для Выходного Узла (Exit Node) -->
+    <main id="exit-panel" class="panel-section">
+      <div class="card">
+        <h3>Выходной узел активен</h3>
+        <p class="description">
+          Оставьте эту вкладку открытой на устройстве со свободным доступом к интернету (например, за рубежом или на домашнем роутере/ноутбуке). Все подключенные клиенты будут выходить в сеть через ваше соединение.
+        </p>
+        
+        <div class="exit-log-card">
+          <h4>Журнал запросов туннеля</h4>
+          <div id="exit-logs" class="logs-container">
+            <div class="log-entry log-info">[Система] Ожидание подключения клиентов...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>Работает на 100% статическом хостинге GitHub Pages без единого сервера баз данных или VPN-демона.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
