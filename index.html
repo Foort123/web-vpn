@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AmneziaWG Config Hub | GitHub Pages VPN</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- QRCode.js для генерации QR для мобильного приложения Amnezia -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <title>AmneziaWG Config Portal | GitHub Pages VPN</title>
+  <!-- Cache-busting версия CSS для сброса кэша браузера -->
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div class="container">
@@ -29,30 +28,47 @@
       </div>
 
       <div class="config-grid">
-        <!-- Левая колонка: Текст конфига и кнопки -->
+        <!-- Текст конфига и кнопки -->
         <div class="config-left">
-          <label class="section-label">Конфигурация для Amnezia VPN:</label>
+          <label class="section-label">Конфигурация для Amnezia VPN (выделите или нажмите кнопку):</label>
           <div class="code-wrapper">
-            <textarea id="config-text" readonly spellcheck="false"></textarea>
+            <!-- Конфиг прописан прямо в HTML, чтобы гарантированно отображаться даже без JS -->
+            <textarea id="config-text" readonly spellcheck="false" style="width: 100%; min-height: 230px; background-color: #0d1117; color: #79c0ff; border: 1px solid #30363d; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 13px; line-height: 1.5; resize: vertical;">[Interface]
+Address = 172.16.0.2/32, 2606:4700:110:87a2:74fe:d0b3:98ca:70b9/128
+PrivateKey = CFGzanbDHvEEFEjuhRfT3T4bFkO7b7vUgtON2QmMs3c=
+DNS = 1.1.1.1, 1.0.0.1
+Jc = 4
+Jmin = 40
+Jmax = 70
+H1 = 1
+H2 = 2
+H3 = 3
+H4 = 4
+
+[Peer]
+PublicKey = bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = 162.159.192.1:2408
+</textarea>
           </div>
 
           <div class="action-buttons">
-            <button class="btn btn-primary" onclick="copyConfig()">
+            <button id="btn-copy" class="btn btn-primary" onclick="copyConfig()">
               📋 Скопировать для Amnezia
             </button>
-            <button class="btn btn-secondary" onclick="downloadConf()">
+            <a href="warp.conf" download="warp.conf" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
               💾 Скачать warp.conf
-            </button>
+            </a>
           </div>
         </div>
 
-        <!-- Правая колонка: QR-код для мобильной Amnezia -->
+        <!-- QR-код через чистый SVG API (не блокируется AdBlock) -->
         <div class="config-right">
-          <label class="section-label">Сканировать в приложении Amnezia (iOS / Android):</label>
+          <label class="section-label">QR-код для смартфона:</label>
           <div class="qr-container">
-            <div id="qrcode"></div>
+            <img id="qr-image" alt="QR Code" style="width: 170px; height: 170px; display: block; border-radius: 4px; background: #fff;" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=%5BInterface%5D%0AAddress%20%3D%20172.16.0.2%2F32%2C%202606%3A4700%3A110%3A87a2%3A74fe%3Ad0b3%3A98ca%3A70b9%2F128%0APrivateKey%20%3D%20CFGzanbDHvEEFEjuhRfT3T4bFkO7b7vUgtON2QmMs3c%3D%0ADNS%20%3D%201.1.1.1%2C%201.0.0.1%0AJc%20%3D%204%0AJmin%20%3D%2040%0AJmax%20%3D%2070%0AH1%20%3D%201%0AH2%20%3D%202%0AH3%20%3D%203%0AH4%20%3D%204%0A%0A%5BPeer%5D%0APublicKey%20%3D%20bmXOC%2BF1FxEMF9dyiK2H5%2F1SUtzH0JuVo51h2wPfgyo%3D%0AAllowedIPs%20%3D%200.0.0.0%2F0%2C%20%3A%3A%2F0%0AEndpoint%20%3D%20162.159.192.1%3A2408">
           </div>
-          <p class="qr-hint">Откройте <strong>Amnezia VPN</strong> ➔ «Добавить туннель» ➔ «Сканировать QR-код»</p>
+          <p class="qr-hint">Откройте <strong>Amnezia VPN</strong> ➔ «Добавить» ➔ «Сканировать QR-код»</p>
         </div>
       </div>
 
@@ -66,7 +82,7 @@
               <option value="balanced">🛡️ Сбалансированный AmneziaWG (Рекомендуется)</option>
               <option value="aggressive">🔥 Агрессивный обход DPI (Усиленный)</option>
               <option value="stealth">🥷 Ультра-стелс (Рандомные заголовки)</option>
-              <option value="wireguard">⚡ Чистый WireGuard (Без мусора)</option>
+              <option value="wireguard">⚡ Чистый WireGuard (Без обфускации)</option>
             </select>
           </div>
 
@@ -91,7 +107,7 @@
         <div class="step-card">
           <span class="step-num">1</span>
           <h4>Установите клиент</h4>
-          <p>Скачайте официальный <strong>Amnezia VPN</strong> с <a href="https://amnezia.org" target="_blank" style="color: var(--primary);">amnezia.org</a> или в App Store / Google Play.</p>
+          <p>Скачайте официальный <strong>Amnezia VPN</strong> с <a href="https://amnezia.org" target="_blank" style="color: var(--primary);">amnezia.org</a> или в Google Play / App Store.</p>
         </div>
 
         <div class="step-card">
@@ -103,22 +119,22 @@
         <div class="step-card">
           <span class="step-num">3</span>
           <h4>Вставьте и подключитесь</h4>
-          <p>Вставьте скопированный текст, выберите протокол <strong>AmneziaWG</strong> и нажмите <strong>«Подключиться»</strong>. Трафик пойдет через Cloudflare!</p>
+          <p>Вставьте скопированный текст, выберите протокол <strong>AmneziaWG</strong> и нажмите <strong>«Подключиться»</strong>. Трафик пойдет через сеть Cloudflare!</p>
         </div>
       </div>
     </section>
 
     <!-- Прямая ссылка на RAW файл -->
     <div class="raw-link-bar">
-      <span>Прямая ссылка на файл конфигурации: </span>
+      <span>Прямой файл конфигурации: </span>
       <a href="warp.conf" target="_blank" id="raw-link">https://foort123.github.io/web-vpn/warp.conf</a>
     </div>
 
     <footer>
-      <p>Сайт работает на GitHub Pages и содержит готовый рабочий криптографический ключ для сети Cloudflare WARP.</p>
+      <p>Сайт работает на GitHub Pages и содержит рабочий криптографический ключ для сети Cloudflare WARP.</p>
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

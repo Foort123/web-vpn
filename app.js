@@ -1,4 +1,4 @@
-// Данные рабочего аккаунта Cloudflare WARP, сгенерированные и проверенные
+// Данные рабочего аккаунта Cloudflare WARP
 const configData = {
   v4: "172.16.0.2",
   v6: "2606:4700:110:87a2:74fe:d0b3:98ca:70b9",
@@ -8,8 +8,6 @@ const configData = {
   endpoint: "162.159.192.1:2408",
   preset: "balanced"
 };
-
-let qrCodeInstance = null;
 
 // Пресеты параметров AmneziaWG для обхода блокировок DPI
 const presets = {
@@ -58,7 +56,6 @@ PrivateKey = ${configData.privateKey}
 DNS = ${configData.dns}
 `;
 
-  // Добавляем параметры AmneziaWG, если это не чистый WireGuard
   if (p.jc !== null) {
     text += `Jc = ${p.jc}
 Jmin = ${p.jmin}
@@ -86,18 +83,10 @@ function updateUI() {
   const textarea = document.getElementById('config-text');
   if (textarea) textarea.value = confText;
 
-  // Обновление QR-кода
-  const qrElem = document.getElementById('qrcode');
-  if (qrElem && typeof QRCode !== 'undefined') {
-    qrElem.innerHTML = '';
-    qrCodeInstance = new QRCode(qrElem, {
-      text: confText,
-      width: 170,
-      height: 170,
-      colorDark: "#ffffff",
-      colorLight: "#161b22",
-      correctLevel: QRCode.CorrectLevel.L
-    });
+  // Обновление QR-кода через API генерации
+  const qrImg = document.getElementById('qr-image');
+  if (qrImg) {
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(confText)}`;
   }
 }
 
@@ -115,32 +104,54 @@ function updateEndpoint() {
   updateUI();
 }
 
-// Копирование в буфер обмена
+// Копирование в буфер обмена с мгновенной визуальной индикацией на кнопке
 function copyConfig() {
-  const text = buildConfigText();
-  navigator.clipboard.writeText(text).then(() => {
-    alert("✅ Конфиг Amnezia скопирован в буфер обмена!\n\nОткройте приложение Amnezia, нажмите «Добавить туннель» -> «Файл с настройками или ключ» и вставьте его.");
-  }).catch(() => {
-    const textarea = document.getElementById('config-text');
+  const textarea = document.getElementById('config-text');
+  const btn = document.getElementById('btn-copy');
+  
+  if (textarea) {
+    textarea.focus();
     textarea.select();
-    document.execCommand('copy');
-    alert("✅ Конфиг скопирован!");
-  });
+  }
+
+  const textToCopy = textarea ? textarea.value : buildConfigText();
+
+  // 1. Попытка через navigator.clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      showCopySuccess(btn);
+    }).catch(() => {
+      // 2. Фоллбэк через execCommand
+      fallbackCopy(textarea, btn);
+    });
+  } else {
+    fallbackCopy(textarea, btn);
+  }
 }
 
-// Скачивание файла warp.conf
-function downloadConf() {
-  const text = buildConfigText();
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'warp.conf';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function fallbackCopy(textarea, btn) {
+  try {
+    if (textarea) {
+      document.execCommand('copy');
+      showCopySuccess(btn);
+    }
+  } catch (err) {
+    alert("Выделите текст в поле и нажмите Ctrl+C");
+  }
 }
 
-// Инициализация при загрузке страницы
+function showCopySuccess(btn) {
+  if (!btn) return;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "✅ Скопировано!";
+  btn.style.backgroundColor = "#2ea043";
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.style.backgroundColor = "";
+  }, 2000);
+}
+
+// Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', () => {
   updateUI();
 });
