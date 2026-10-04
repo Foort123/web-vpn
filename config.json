@@ -1,0 +1,9 @@
+{
+  "private_key": "CFGzanbDHvEEFEjuhRfT3T4bFkO7b7vUgtON2QmMs3c=",
+  "public_key": "NPQCZen8BhkPvJMhTpQTLHA6wsGsnn9chTReijK/ShI=",
+  "peer_pub": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+  "v4": "172.16.0.2",
+  "v6": "2606:4700:110:87a2:74fe:d0b3:98ca:70b9",
+  "endpoint": "162.159.192.1:2408",
+  "conf": "[Interface]\nAddress = 172.16.0.2/32, 2606:4700:110:87a2:74fe:d0b3:98ca:70b9/128\nPrivateKey = CFGzanbDHvEEFEjuhRfT3T4bFkO7b7vUgtON2QmMs3c=\nDNS = 1.1.1.1, 1.0.0.1\nJc = 4\nJmin = 40\nJmax = 70\nH1 = 1\nH2 = 2\nH3 = 3\nH4 = 4\n\n[Peer]\nPublicKey = bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=\nAllowedIPs = 0.0.0.0/0, ::/0\nEndpoint = 162.159.192.1:2408\n"
+}
